@@ -1,0 +1,75 @@
+diff --git a/aemfvp-a/build-test-busybox.sh b/aemfvp-a/build-test-busybox.sh
+index 435db55..73c1527 100755
+--- a/aemfvp-a/build-test-busybox.sh
++++ b/aemfvp-a/build-test-busybox.sh
+@@ -157,22 +157,22 @@ create_ext3part ()
+ 	mkdir -p mnt
+ 	#umount if it has been mounted
+ 	if [[ $(findmnt -M "mnt") ]]; then
+-		fusermount -u mnt
++		sudo umount mnt
+ 	fi
+ 	mkfs.ext3 -F $ext3part_name
+ 
+-	fuse-ext2 $ext3part_name mnt -o rw+
+-	cp -rf $TOP_DIR/$BUSYBOX_PATH/$BUSYBOX_OUT_DIR/_install/* mnt/
++	sudo mount $ext3part_name mnt
++	sudo cp -rf $TOP_DIR/$BUSYBOX_PATH/$BUSYBOX_OUT_DIR/_install/* mnt/
+ 	sync
+ 
+ 	pushd mnt/
+-	mkdir proc/ sys/ dev/ var/
+-	mkdir -p etc/init.d/
+-	cp -rf $DIR/rcS etc/init.d/
++	sudo mkdir proc/ sys/ dev/ var/
++	sudo mkdir -p etc/init.d/
++	sudo cp -rf $DIR/rcS etc/init.d/
+ 
+ 	popd
+ 
+-	fusermount -u mnt
++	sudo umount mnt
+ 	rm -rf mnt
+ 	echo "EXT3 partition image created"
+ }
+diff --git a/build-busybox.sh b/build-busybox.sh
+index 0f0d9ff..70010b1 100755
+--- a/build-busybox.sh
++++ b/build-busybox.sh
+@@ -56,9 +56,9 @@ do_build ()
+ 
+ 		pushd $TOP_DIR/$BUSYBOX_PATH
+ 		mkdir -p $BUSYBOX_OUT_DIR
+-		make O=$BUSYBOX_OUT_DIR defconfig
++		make O=$TOP_DIR/$BUSYBOX_PATH/$BUSYBOX_OUT_DIR defconfig
+ 		sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/g' $BUSYBOX_OUT_DIR/.config
+-		make O=$BUSYBOX_OUT_DIR -j $PARALLELISM install
++		make O=$TOP_DIR/$BUSYBOX_PATH/$BUSYBOX_OUT_DIR -j $PARALLELISM install
+ 		# do some commands to build
+ 		popd
+ 	fi
+@@ -71,7 +71,7 @@ do_clean ()
+ 
+ 		pushd $TOP_DIR/$BUSYBOX_PATH
+ 		mkdir -p $BUSYBOX_OUT_DIR
+-		make O=$BUSYBOX_OUT_DIR clean
++		make O=$TOP_DIR/$BUSYBOX_PATH/$BUSYBOX_OUT_DIR clean
+ 		popd
+ 		if [ "$PLATFORM" != "aemfvp-a" ]; then
+ 			pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
+diff --git a/build-uboot.sh b/build-uboot.sh
+index 91805b7..6998912 100755
+--- a/build-uboot.sh
++++ b/build-uboot.sh
+@@ -50,9 +50,9 @@ do_build ()
+ 		pushd $TOP_DIR/$UBOOT_PATH
+ 		for item in $UBOOT_BOARDS; do
+ 			local outdir=output/$item
+-			make -j $PARALLELISM O=$outdir ${item}_config
++			make -j $PARALLELISM O=$TOP_DIR/$UBOOT_PATH/$outdir ${item}_config
+ 			scripts/kconfig/merge_config.sh -O $outdir  $outdir/.config $UBOOT_CONFIG
+-			make -j $PARALLELISM O=$outdir
++			make -j $PARALLELISM O=$TOP_DIR/$UBOOT_PATH/$outdir
+ 			cp -R $outdir/tools output
+ 		done
+ 		popd
